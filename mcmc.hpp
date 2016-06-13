@@ -8,10 +8,10 @@
 
 #include "utility.hpp"
 
-class mcmc_rwm
+class RandomWalkMetropolis
 {
 public:
-	mcmc_rwm(double (*f)(const std::vector<double>&)) : target(f), uniform(0, 1), standard_normal(0,1) {}
+	RandomWalkMetropolis(double (*f)(const std::vector<double>&)) : target(f), uniform(0, 1), standard_normal(0,1) {}
 	
 	void run(std::vector<double> x, unsigned int mcmc_n, unsigned int burn, unsigned int thin, double step_size)
 	{

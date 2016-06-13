@@ -34,7 +34,6 @@ double log_posterior (const std::vector<double>& log_param)
 		
 		// Return log posterior
 		return log_likelihood + log_prior;
-		
 }
 
 
@@ -90,7 +89,7 @@ int main()
 	
 	
 	// Run sampler
-	mcmc_rwm sampler(log_posterior);
+	RandomWalkMetropolis sampler(log_posterior);
 	std::vector<double> init = {0.};
 	sampler.run(init, 10000, 1000, 50, 0.005);
 

@@ -18,6 +18,14 @@ public:
 												  standard_normal(0, 1)
 	{
 		assert(c.rows() == dim && c.cols() == dim);
+		llt = Eigen::LLT<Eigen::MatrixXd>(covariance);
+		l_cholesky =llt.matrixL();
+		
+		double root_log_det = 0.;
+		for(unsigned int i = 0; i < dim; ++i)
+			root_log_det += log(l_cholesky(i, i));
+		norm = -0.5*dim*log(2*M_PI) - root_log_det;
+		
 		return;
 	}
 	
@@ -25,18 +33,12 @@ public:
 	{
 		assert(x.size() == dim);
 		
-		// If not done already, compute normalizing term - otherwise use cached
-		//if(norm == 0)
-		double ret = -0.5*dim*log(2*M_PI);
-		Eigen::FullPivHouseholderQR<Eigen::MatrixXd> lu(covariance);
-		ret += - 0.5*lu.logAbsDeterminant();
-
-		//Could use Cached cholesky here, but for bigger examples we won't do this
-		//For now I've used LDLT decomposition to solve LSE - to use CG method instead
+		// Precomputed normalization term
+		double ret = norm;
+	
 		//Compute exponent term y^T*z where Cz = y, y = (x-m)
 		Eigen::VectorXd y = x - mean;
-		
-		Eigen::VectorXd z = lu.solve(y);
+		Eigen::VectorXd z = llt.solve(y);
 		ret += -0.5*y.transpose()*z;
 		
 		return ret;
@@ -44,13 +46,6 @@ public:
 	
 	Eigen::VectorXd rv()
 	{
-		// If not done already, compute Cholesky decomp - otherwise use cached.
-		if(l_cholesky.isZero())
-		{
-			Eigen::LLT<Eigen::MatrixXd> llt(covariance);
-			l_cholesky = llt.matrixL();
-		}
-		
 		// Draw z ~ N(0,1) and return Lz + m
 		Eigen::VectorXd z(dim);
 		for(unsigned int i = 0; i < dim; ++i)
@@ -63,6 +58,7 @@ public:
 private:
 	Eigen::VectorXd& mean;
 	Eigen::MatrixXd& covariance;
+	Eigen::LLT<Eigen::MatrixXd> llt;
 	Eigen::MatrixXd l_cholesky;
 	double norm;
 	unsigned int dim;
@@ -81,7 +77,7 @@ public:
 		for(unsigned int i = 0; i < dim; ++i)
 		{
 			// Diagonal - last term fixes numerical stability issues
-			covariance(i,i) = covariance_function(x_space(i), x_space(i)) + 10e-10;
+			covariance(i,i) = covariance_function(x_space(i), x_space(i)) + 10e-8;
 			
 			for(unsigned int j = i+1; j < dim; ++j)
 			{
